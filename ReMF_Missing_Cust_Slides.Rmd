@@ -152,7 +152,7 @@ ci.tab<-function(vec,Miss=1,Cust=0,Ethn=0,Inter=0){
   #no parameter for the missingness model
  ret.tab <- c(vec[1]-2*vec[2],vec[1],
       vec[1]+2*vec[2])
- ret.tab <- invlogit(ret.tab)
+ ret.tab <- exp(ret.tab)
  #If you want output on the log(OR) scale, comment the line above
  ret.tab <-c(ret.tab,c(Miss, Cust, Ethn, Inter))
  ret.tab <- as.data.frame(t(ret.tab))
@@ -352,8 +352,6 @@ rbind(Ethn.Cust.benchmark.tab,Ethn.Cust.MCAR.tab,
 * This corresponds to an odds ratio of 0.37 and a log(OR) of -0.54
 * If we look at the running example, it could correspond to a probability of incarceration for the remorseful of 0.2 and 0.235 for the non-remorseful.
 
-
-
 # MNAR
 
 \footnotesize
@@ -401,7 +399,7 @@ MM.Ethn.Cust <- 0.9
 * When we choose the intercept, there are two things to consider
     1. The first is that we want to overall missingness to reflect the missingness we have in our data
     2. The intercept has to be interpretable.
-* For example, in the MNAR case, we choose an intercept that is -1.55.
+* For example, in the MNAR case, we choose an intercept of -1.55.
 * This means that an offender of mean age, no remorse, who is white and does not get custody has as 17\% probability of being missing
 * Is this a plausible value? 
 
@@ -426,25 +424,24 @@ invlogit(MNAR_intercept)
 
 # MNAR overview 
 
-* You probably need to vary all 3 (and possibly the coefficients of the other predictors in the missingness model) in order to get a complete picture
-* Perhaps these values are not plausible. For instance we may feel that more than 37\% of people from ethnic minorities in custody would be willing to divulge their ethnicity. 
+* Perhaps these values are not plausible. 
+* For instance we may feel that more than 37\% of people from ethnic minorities in custody would be willing to divulge their ethnicity. 
 * You may have auxiliary data that can help with this.
 
 # MNAR
 
 \small
 
-* In a sensitivity analysis, you vary the interaction (and possibly the coefficients of \texttt{Ethnicity} and \texttt{Custody}) to explore at what point the difference between the benchmark coefficient of \texttt{Ethnicity} and the estimated is too large.
-* If this happens when the coefficients are
-    1. very large (or very small), 
-    2. associated with unrealistic levels of missingness or 
-    3. have otherwise implausible values, 
+* In a sensitivity analysis, you vary the interaction (and possibly the coefficients of \texttt{Ethnicity} and \texttt{Custody}) 
+* And note the difference between the benchmark and the estimated coefficients of \texttt{Ethnicity} as well as the levels of missingness
+* If a plausible interaction term coefficients 
+    1. associated with unrealistic levels of missingness or 
+    2. has otherwise implausible values, 
 * You can argue that the results are robust to missingness. 
-* If the coefficients change substantially with 
+* If this happens when the coefficient of the interaction term has
     1. plausible values and 
     2. realistic levels of missingness,
 * then you have to concede that your results are sensitive to missingness.
-
 
 # MNAR missingness indicator
 
@@ -463,7 +460,7 @@ pMNAR <- with(ReMF.dat,
 
 #missing data indicator
 MNAR <- rbinom(n = nrow(ReMF.dat), size = 1, prob = pMNAR)
-#sum(MNAR)/nrow(ReMF.dat)
+sum(MNAR)/nrow(ReMF.dat)
 
 MNAR_ReMF.dat <- ReMF.dat %>%
   mutate(Ethnicity=ifelse(MNAR==0,Ethnicity,NA))
@@ -494,7 +491,7 @@ rbind(Ethn.Cust.benchmark.tab,Ethn.Cust.MCAR.tab,
 ```
 
 
-* We can see that there is a negligible difference in the odds ratio coefficient estimates even though there is 20\% missingness. 
+* We can see that there is a small difference in the odds ratio coefficient estimates even though there is 20\% missingness. 
 * Higher values of \texttt{MM.Ethn.Cust} move this interval further down showing that the more the missingness in \texttt{Ethnicity} is linked with \texttt{Custody}, the more we underestimate the effect of Ethnicity on \texttt{Custody}. 
 * In this case, we can see that the results are robust! Yay.
 
@@ -513,7 +510,7 @@ Cust.all.results
 
 # Some useful plots
 
-* To investigate the impact of the \texttt{MM.Ethn.Cust} value, let's run the MNAR model for a range of "plausible" values, say between 0.1 and 1. 
+* To investigate the impact of the \texttt{MM.Ethn.Cust} value, let's run the MNAR model for a range of "plausible" values, say between 0.1 and 2. 
 * You need to justify this
 * We will assume that the value is always positive which means being of an ethnic minority is always more likely to increase missingness.
 
@@ -522,7 +519,7 @@ Cust.all.results
 \footnotesize
 
 ```{r echo=FALSE}
-MM.Ethn.Cust.Vec <- seq(0,1,by=0.05)
+MM.Ethn.Cust.Vec <- seq(0,2,by=0.05)
 MM.Intercept <- (seq())
 
 #to store the percentage missing so this remains "plausible"
@@ -551,32 +548,40 @@ Ethn.Cust.MNAR <- Cust.MNAR$coefficients[4,1:2]
 
 store.coeff.ethn <- rbind(store.coeff.ethn,ci.tab(Ethn.Cust.MNAR, Miss=4, 
                 Cust = MM.Cust, Ethn = MM.Ethn, Inter = MM.Ethn.Cust))
-  }
+}
 
-plot.coeff <- ggplot(store.coeff.ethn, aes(x=Inter)) +
-  geom_ribbon(aes(ymin=`Lower 95% CI`,
-                  ymax=`Upper 95% CI`), fill = "grey70") +
+##PLOTS
+
+plot.coeff.miss <- ggplot(data=data.frame(Per.miss=store.per.miss,store.coeff.ethn),
+                          aes(x=Per.miss)) +
+                  geom_ribbon(aes(ymin=Lower.95..CI,
+                                  ymax=Upper.95..CI), fill = "grey70")+
   geom_line(aes(y=Est)) +
-  geom_hline(yintercept=Ethn.Cust.benchmark.tab$Est) +
-  geom_hline(yintercept=Ethn.Cust.benchmark.tab$`Lower 95% CI`,linetype="dashed") +
-  geom_hline(yintercept=Ethn.Cust.benchmark.tab$`Upper 95% CI`,linetype="dashed") +
-  geom_vline(xintercept=0)+
-  geom_vline(xintercept=0.5)
+  geom_hline(yintercept=Ethn.Cust.benchmark.tab$coefficient) +
+  geom_vline(xintercept=c(0.18,0.22),linetype="dashed")
+  
+
+prob.Ethn.Cust.miss = with(store.coeff.ethn,
+                      invlogit(MNAR_intercept+MM.Cust+
+                                 MM.Ethn+Inter)) 
 
 
-plot.per.miss <- ggplot(data=data.frame(Inter=MM.Ethn.Cust.Vec,Per.miss=store.per.miss),
-  aes(x=Inter,y=Per.miss))+geom_line() +
-  geom_hline(yintercept=0.18)+
-  geom_hline(yintercept=0.22)
+plot.per.miss <- ggplot(data=data.frame(prob.Ethn.Cust.miss=prob.Ethn.Cust.miss,
+                                        Per.miss=store.per.miss),
+                        aes(y=prob.Ethn.Cust.miss,x=Per.miss))+geom_line() +
+                        geom_vline(xintercept=c(0.18,0.22),linetype="dashed")
 
-grid.arrange(plot.coeff, plot.per.miss, nrow = 2)
+grid.arrange(plot.coeff.miss, plot.per.miss, nrow = 2)
 ```
 
 # DIY
+
+\small
 
 * Try different values of the various parameters.
 * For example, how do things change if you play around with the coefficients of \texttt{Age\_Cont} or \texttt{MF\_Remorse}?
 * Or if you change the parameters in the MNAR model?
 * Can you keep the \% missingness close to 20\%? 
 * Try a different \% missingness
-* The next few slides have some tables and plots that can help display and visualise the outputs.
+* For this context I found the coefficient of ethnicity to be very robust
+* The contiuous example with Sentence length as the outcome is much more sensitive
