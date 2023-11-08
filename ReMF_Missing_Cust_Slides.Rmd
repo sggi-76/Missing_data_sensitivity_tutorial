@@ -25,7 +25,7 @@ setwd("~/Dropbox (LSE Statistics)/Sentencing Disparities/Methods festival")
 
 # Format of this tutorial
 
-* You should have access to the data and the R code (as well as the Rmarkdown) associated with these slides.
+* You should have access to the data (\texttt{ReMF\_original.csv}) and the R code (as well as the Rmarkdown) associated with these slides.
 * These can be found here https://github.com/sggi-76/Missing_data_sensitivity_tutorial
 * If you haven't done so already, please download the data and the R code.
 * I would like you to run the code alongside my slides.
@@ -63,11 +63,10 @@ This process is not perfect.
 
 * The complete case data could be biased and so your benchmark isn't the true estimate. 
 * But.. complete case data are the best data you have (as they most closely resemble the full data).
+* There are a *lot* of moving parts
 * Any missing data mechanism you attempt needs to be justified. 
 * Typically, you will attempt many plausible mechanisms and compare the results under these mechanisms to the benchmark values.
 * The actual missing data patterns in your data can be used as a basis for your sensitivity analysis.
-* There are a *lot* of moving parts
-
 
 # Data
 
@@ -106,7 +105,7 @@ This process is not perfect.
 
 * Our binary outcome is \texttt{Custody} which is 1 if an offender is incarcerated and 0 if they receive a different sentence.
 * We are interested in the effect of \texttt{Ethnicity} on incarceration
-* We know that people who are from ethnic minorities in the UK are less likely to report their ethnicity and therefore they will have missing entries. 
+* We know that people who are from ethnic minorities in the UK are less likely to report their \texttt{Ethnicity} and therefore they will have missing entries. 
 * However, we also suspect that people from ethnic minorities are more likely to be incarcerated.
 * It is therefore possible that the coefficients of ethnicity in our regressions are biased because ethnic minorities are under-represented in the complete case data.
 
@@ -154,7 +153,11 @@ Cust.benchmark <- glm(Custody~.,data=ReMF.dat)
 
 #summary(Cust.benchmark)
 ```
-The equation looks like this $p(Custody=1)=invlogit(\beta X)$ where $\beta$ is the vector of coefficients and $X$ is the design matrix
+The equation looks like this 
+$$
+p(Custody=1)=invlogit(\beta X)
+$$ 
+where $\beta$ is the vector of coefficients and $X$ is the design matrix
 
 # ci.tab 
 
@@ -197,7 +200,7 @@ Ethn.Cust.benchmark.tab <- ci.tab(Ethn.Cust.benchmark)
 Ethn.Cust.benchmark.tab
 
 ```
-As I have not \texttt{set(seed=xx)} when you run your R code, it won't be exactly the same as mine.
+
 
 # Missingness mechanisms
 
@@ -216,7 +219,7 @@ As I have not \texttt{set(seed=xx)} when you run your R code, it won't be exactl
     1. It is a variable that is often missing in real data 
     2. The way it is missing is typically not at random 
 * For crime data, there is likely to be structural racism 
-* Also ethnicity is often self-reported and white offenders are more likely to declare their ethnicity than ethnic minority offenders.
+* Also \texttt{Ethnicity} is often self-reported and white offenders are more likely to declare their \texttt{Ethnicity} than ethnic minority offenders.
 
 # The missingness indicator
 
@@ -224,7 +227,7 @@ As I have not \texttt{set(seed=xx)} when you run your R code, it won't be exactl
     1. if its value is 1 then the corresponding value of \texttt{Ethnicity} is *missing* and 
     2. if its value is 0, then the corresponding value of \texttt{Ethnicity} is *observed*. 
 * The pattern of the missingness indicator for MAR and MNAR is modelled using logistic regressions which allow us to include what factors we think govern the missingess. 
-* The easiest way to generate a binary variable is using a binomial distribution with the probability of missingess coming from the logistic regression for MAR and MNAR.
+
 
 # MCAR
 
@@ -263,7 +266,7 @@ Ethn.Cust.MCAR.tab <- ci.tab(Ethn.Cust.MCAR, Miss=2)
 rbind(Ethn.Cust.benchmark.tab,Ethn.Cust.MCAR.tab)
 ```
 
-I provide the odds ratio and 95\% confidence intervals so that you can see that there is substantial overlap in the confidence intervals.
+I provide the odds ratio and 95\% confidence intervals so that you can see that there is substantial overlap in the confidence intervals. As I have not \texttt{set(seed=xx)} when you run your R code, it won't be exactly the same as mine.
 
 # Results under MCAR
 
@@ -278,10 +281,11 @@ I provide the odds ratio and 95\% confidence intervals so that you can see that 
 
 # Important point
 
-* Before moving onto MAR, it is worth pointing out that in this type of sensitivity analysis there are a *lot* of moving parts.
-* The \% missing, the values of parameters that govern the missingness mechanisms (MAR, MNAR) such as the intercept and the coefficients of \texttt{Ethnicity}
+* Before moving onto MAR, it is worth reminding you that in this type of sensitivity analysis there are a *lot* of moving parts.
+* The \% missing, the values of parameters that govern the missingness mechanisms (MAR, MNAR) such as the intercept and the coefficients of \texttt{Ethnicity} and \texttt{Custody}
 * This is not a quick fix, rather, it is way of gaining deeper understanding of your data and it may raise more questions than it answers
 * Having said that, it is worth constraining some things early on (e.g. the \% missing and some coefficients), justifying these values and then varying fewer parameters
+* Some values you can derive from your data (e.g. you know what \% of those in \texttt{Custody} have missing \texttt{Ethnicity})
 
 # MAR
 
@@ -305,7 +309,7 @@ I provide the odds ratio and 95\% confidence intervals so that you can see that 
 # MAR
 
 * Sensible values for logistic regression parameters are between -2 to 2, larger effects are rare. 
-* As \texttt{Age\_cont} is continuous, we allocate a small positive effect to it. 
+* As \texttt{Age\_cont} is continuous, we allocate a small negative effect to it. 
 * We start with -0.02. This means that the odds of having a missing \texttt{Ethnicity} decrease by 2% for every additional year.
 * \texttt{MF\_Remorse} is binary and we want a relatively strong association so we start with -0.20. 
 * This corresponds to an decrease in 18% in the odds of being missing for those who are remorseful. 
@@ -367,17 +371,17 @@ rbind(Ethn.Cust.benchmark.tab,Ethn.Cust.MCAR.tab,
       Ethn.Cust.MAR.tab)
 ```
 
-# A different way of thinking about MAR
+# A better way of thinking about MAR
 
 * It is possible to think about the coefficients in terms of probabilities
 * This can be done in two ways:  
 
-1) We believe that the probability of being missing for those showing remorse is 0.2 and 
+1) We know from the data that the probability of being missing for those showing remorse is 0.2 and 
 * the probability of being missing for those not showing remorse is 0.6 
 * This corresponds to an odds ratio of $\frac{\frac{0.2}{1-0.2}}{\frac{0.6}{1-0.6}} = 0.17$ 
 * which corresponds to log(OR) of -1.8 which would then be the value of the coefficient of \texttt{MF\_Remorse} in the missingness logistic regression
 
-# A different way of thinking about MAR
+# A better way of thinking about MAR
 
 2) The probability of being missing for those showing remorse is thought to be 0.2 and 
 * the probability of being missing for those not showing remorse is 50\% more meaning it is 0.3
@@ -400,7 +404,7 @@ rbind(Ethn.Cust.benchmark.tab,Ethn.Cust.MCAR.tab,
 # MNAR Ethnicity
 
 * We assume that being from an ethnic minority increases the chance of \texttt{Ethnicity} being missing 
-* i.e. the value of the missingness indicator is more likely to be 1 when \texttt{Ethnicity}=1). 
+* i.e. the value of the missingness indicator is more likely to be 1 when \texttt{Ethnicity}=1. 
 * This is in line with observed data where people from ethnic minorities are more likely to refuse to report their ethnicity. 
 * This means that the coefficient of \texttt{Ethnicity} is positive. 
 * Let's start with 0.2 which corresponds to an increase in  the odds of missing of 18%.
@@ -412,6 +416,7 @@ rbind(Ethn.Cust.benchmark.tab,Ethn.Cust.MCAR.tab,
 * This reflects the idea that most people in custody are white and therefore we expect a small negative association (although we could debate this point and the results may well be different). 
 * We initially choose -0.05 which corresponds to an odds ratio of 0.95. 
 * We keep these values constant for the simulation study below.
+* You could get this info from your data as you know what \% have missing \texttt{Ethnicity} for those in \texttt{Custody}
 
 # MNAR Interaction
 
@@ -470,20 +475,6 @@ $+ 0.2 Ethnicity - 0.05 Custody + 0.9 Ethnicity \times Custody)$
 
 
 
-# MNAR
-
-\small
-
-* Recap: in this sensitivity analysis you vary the value of the interaction between \texttt{Ethnicty} and \texttt{Custody}
-* And monitor the difference between the benchmark and the estimated coefficients of \texttt{Ethnicity} as well as the levels of missingness
-* If a plausible value of interaction term coefficient is 
-    1. associated with unrealistic levels (\%) of missingness or 
-    2. results in an implausible value of the coefficient of \texttt{Ethnicty} in the outcome equation,
-* then you have to concede that your results are sensitive to missingness.
-* If a plausible value of the interaction term coefficient is
-    1. associated with the observed level (\%) of missingbess
-    2. results in plausible value of the coefficient of \texttt{Ethnicty} in the outcome equation,
-* You can argue that the results are robust to missingness. 
 
 # MNAR missingness indicator
 
@@ -502,7 +493,7 @@ pMNAR <- with(ReMF.dat,
 
 #missing data indicator
 MNAR <- rbinom(n = nrow(ReMF.dat), size = 1, prob = pMNAR)
-sum(MNAR)/nrow(ReMF.dat)
+#sum(MNAR)/nrow(ReMF.dat)
 
 MNAR_ReMF.dat <- ReMF.dat %>%
   mutate(Ethnicity=ifelse(MNAR==0,Ethnicity,NA))
@@ -554,9 +545,27 @@ rownames(Cust.all.results) <- c("True","MCAR","MAR","MNAR")
 Cust.all.results
 ```
 
+# MNAR multiple values of interaction term value
+
+\small
+
+* Now we *vary* the value of the interaction between \texttt{Ethnicty} and \texttt{Custody}
+* And monitor the difference between the benchmark and the estimated coefficients of \texttt{Ethnicity} as well as the levels of missingness
+* If a plausible value of interaction term coefficient is 
+    1. associated with unrealistic levels (\%) of missingness or 
+    2. results in an implausible value of the coefficient of \texttt{Ethnicty} in the outcome equation,
+    3. results in unrealistic levels of missingness for those who are non-white and incarcerated,
+* then you have to concede that your results are sensitive to missingness.
+* If a plausible value of the interaction term coefficient is
+    1. associated with the observed level (\%) of missingness
+    2. results in plausible value of the coefficient of \texttt{Ethnicty} in the outcome equation,
+    3. results in plausible levels of missingness for those who are non-white and incarcerated,
+* You can argue that the results are robust to missingness. 
+
+
 # Some useful plots
 
-* To investigate the impact of the \texttt{MM.Ethn.Cust} value, let's run the MNAR model for a range of "plausible" values, say between 0.1 and 2. 
+* To investigate the impact of the \texttt{MM.Ethn.Cust} interaction term value, let's run the MNAR model for a range of "plausible" values, say between 0.1 and 2. 
 * We will assume that the value is always positive which means being of an ethnic minority is always more likely to increase missingness.
 
 # Some useful plots
@@ -602,7 +611,7 @@ plot.coeff.miss <- ggplot(data=data.frame(Per.miss=store.per.miss,store.coeff.et
                   geom_ribbon(aes(ymin=Lower.95..CI,
                                   ymax=Upper.95..CI), fill = "grey70")+
   geom_line(aes(y=Est)) +
-  geom_hline(yintercept=Ethn.Cust.benchmark.tab$coefficient) +
+  geom_hline(yintercept=Ethn.Cust.benchmark.tab$Est) +
   geom_vline(xintercept=c(0.18,0.22),linetype="dashed")
   
 

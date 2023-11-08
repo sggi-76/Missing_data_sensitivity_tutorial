@@ -8,13 +8,14 @@ library(dplyr)
 library(purrr)
 library(forcats)
 library(gridExtra)
+#set your own working directory
 setwd("~/Dropbox (LSE Statistics)/Sentencing Disparities/Methods festival")
 
 
 ## ---------------------------------------------------------------------------------------------
 ReMF.dat<- read.csv("ReMF_original.csv",
                        header=T,stringsAsFactors = T)
-#head(ReMF.dat)
+head(ReMF.dat)
 
 
 ## ---------------------------------------------------------------------------------------------
@@ -35,7 +36,7 @@ ReMF.dat <- ReMF.dat %>%
 ## ---------------------------------------------------------------------------------------------
 Cust.benchmark <- glm(Custody~.,data=ReMF.dat)
 
-#summary(Cust.benchmark)
+summary(Cust.benchmark)
 
 
 ## ---------------------------------------------------------------------------------------------
@@ -76,7 +77,7 @@ per.miss <- 0.2
 
 #generate the missing data indicator
 MCAR <- rbinom(n=nrow(ReMF.dat),size=1,prob=c(per.miss))
-#sum(MCAR)/nrow(ReMF.dat) 
+sum(MCAR)/nrow(ReMF.dat) 
 #should check that the % of missing is approximately correct
 
 #now add NAs to create a missingness pattern
@@ -104,7 +105,7 @@ pMAR <- with(ReMF.dat, invlogit(-1.3 + MM.Age_Cont*Age_Cont +
 
 #missing data indicator
 MAR <- rbinom(n = nrow(ReMF.dat), size = 1, prob = pMAR)
-#sum(MAR)/nrow(ReMF.dat) 
+sum(MAR)/nrow(ReMF.dat) 
 #check that this is approx 0.2
 
 MAR_ReMF.dat <- ReMF.dat %>%
